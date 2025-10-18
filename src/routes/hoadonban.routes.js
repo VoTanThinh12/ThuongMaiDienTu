@@ -98,6 +98,47 @@ router.get('/', authenticateToken, checkRole('quan_ly'), async (req, res) => {
   }
 });
 
+// Test route - không cần auth
+router.get('/test', (req, res) => {
+  console.log('🔥 Test route hit!');
+  res.json({ message: 'Test route working!', timestamp: new Date() });
+});
+
+// Lấy chi tiết hóa đơn theo ID — chỉ quản lý
+router.get('/:id/chitiet', authenticateToken, checkRole('quan_ly'), async (req, res) => {
+  console.log(`🔍 Getting bill details for ID: ${req.params.id}`);
+  const { id } = req.params;
+  
+  try {
+    console.log(`📊 Querying chi_tiet_hoa_don_ban for id_hoa_don: ${id}`);
+    
+    const chiTietHoaDon = await prisma.chi_tiet_hoa_don_ban.findMany({
+      where: { id_hoa_don: Number(id) },
+      include: {
+        san_pham: {
+          select: {
+            id: true,
+            ten_san_pham: true,
+            ma_san_pham: true,
+            don_vi_tinh: true,
+            gia_ban: true,
+            so_luong: true
+          }
+        }
+      },
+      orderBy: { id: 'asc' }
+    });
+    
+    console.log(`✅ Found ${chiTietHoaDon.length} items for bill ${id}`);
+    console.log('📋 Data:', JSON.stringify(chiTietHoaDon, null, 2));
+    
+    res.json(chiTietHoaDon);
+  } catch (error) {
+    console.error("❌ Lỗi khi lấy chi tiết hóa đơn:", error);
+    res.status(500).json({ error: 'Lỗi khi lấy chi tiết hóa đơn: ' + error.message });
+  }
+});
+
 // Xóa hóa đơn — chỉ quản lý
 router.delete('/:id', authenticateToken, checkRole('quan_ly'), async (req, res) => {
   const { id } = req.params;

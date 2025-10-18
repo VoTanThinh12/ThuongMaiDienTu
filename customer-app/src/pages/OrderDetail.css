@@ -1,0 +1,25 @@
+.order-detail-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  min-height: calc(100vh - 200px);
+}
+
+.order-detail-page .ant-card {
+  border-radius: 8px;
+}
+
+.order-detail-page .ant-descriptions-item-label {
+  font-weight: 500;
+  background: #fafafa;
+}
+
+@media (max-width: 768px) {
+  .order-detail-page .ant-descriptions {
+    font-size: 14px;
+  }
+  
+  .order-detail-page .ant-table {
+    font-size: 12px;
+  }
+}

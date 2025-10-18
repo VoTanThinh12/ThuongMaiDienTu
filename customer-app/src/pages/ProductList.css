@@ -1,0 +1,153 @@
+/* Product List Page Background */
+body {
+  background: #f8f9fa !important;
+}
+
+.product-list-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  min-height: calc(100vh - 200px);
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  margin-bottom: 40px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.page-header h1 {
+  font-size: 32px;
+  margin: 0;
+  color: #333;
+  font-weight: 700;
+}
+
+/* Filters Panel */
+.filters-panel {
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+  border: 1px solid #f0f0f0 !important;
+}
+
+.filters-panel label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.filters-panel .ant-select,
+.filters-panel .ant-input {
+  border-radius: 8px !important;
+}
+
+.filters-panel .ant-btn {
+  border-radius: 8px !important;
+  font-weight: 500;
+}
+
+/* Products Grid */
+.products-grid {
+  background: white;
+  padding: 24px;
+  border-radius: 16px;
+  margin: 24px 0;
+}
+
+/* Results Summary */
+.results-summary {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #ff6b6b;
+}
+
+.results-summary .ant-tag {
+  border-radius: 16px !important;
+  font-weight: 500;
+  padding: 4px 12px !important;
+}
+
+.results-summary .ant-tag .anticon {
+  margin-left: 4px;
+}
+
+/* Pagination */
+.ant-pagination {
+  margin-top: 48px !important;
+}
+
+.ant-pagination .ant-pagination-total-text {
+  color: #666;
+  font-weight: 500;
+}
+
+/* Empty State */
+.ant-empty {
+  padding: 80px 0 !important;
+}
+
+.ant-empty-description {
+  color: #999 !important;
+  font-size: 16px !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .product-list-page {
+    padding: 24px 16px;
+  }
+  
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  
+  .page-header h1 {
+    font-size: 24px;
+    margin-bottom: 16px;
+  }
+  
+  .page-header .ant-space {
+    justify-content: center;
+  }
+  
+  .filters-panel .ant-col {
+    margin-bottom: 16px;
+  }
+  
+  .results-summary {
+    text-align: center;
+  }
+  
+  .results-summary .ant-space {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 576px) {
+  .page-header .ant-input-search {
+    max-width: 100% !important;
+  }
+  
+  .filters-panel .ant-space {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .filters-panel .ant-space .ant-btn {
+    width: 100%;
+  }
+}

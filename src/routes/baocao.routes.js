@@ -80,6 +80,9 @@ router.get('/hieusuatnhanvien', authenticateToken, checkRole('quan_ly'), async (
           gte: start,
           lte: end,
         },
+        id_nhan_vien: {
+          not: null,
+        },
       },
     });
 

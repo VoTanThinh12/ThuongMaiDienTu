@@ -1,0 +1,148 @@
+.app-footer {
+  background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+  color: white;
+  margin-top: auto;
+  padding: 60px 0 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.app-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="footer-pattern" width="50" height="50" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.05"/></pattern></defs><rect width="100" height="100" fill="url(%23footer-pattern)"/></svg>');
+  opacity: 0.3;
+}
+
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
+}
+
+.footer-section {
+  margin-bottom: 32px;
+}
+
+.footer-title {
+  color: #fff !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  margin-bottom: 16px !important;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.footer-subtitle {
+  color: #fff !important;
+  font-size: 18px !important;
+  font-weight: 600 !important;
+  margin-bottom: 20px !important;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 8px;
+  display: inline-block;
+}
+
+.footer-description {
+  color: rgba(255,255,255,0.8) !important;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.social-icon {
+  font-size: 24px;
+  color: #3498db;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.social-icon:hover {
+  color: #5dade2;
+  transform: scale(1.2);
+}
+
+.contact-info {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.contact-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255,255,255,0.9);
+  font-size: 14px;
+}
+
+.contact-item .anticon {
+  color: #3498db;
+  font-size: 16px;
+}
+
+.service-links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.service-links a {
+  color: rgba(255,255,255,0.8);
+  text-decoration: none;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  padding: 4px 0;
+  border-radius: 4px;
+}
+
+.service-links a:hover {
+  color: #3498db;
+  padding-left: 8px;
+  background: rgba(52, 152, 219, 0.1);
+}
+
+.footer-bottom {
+  border-top: 1px solid rgba(255,255,255,0.1);
+  padding-top: 20px;
+  text-align: center;
+  margin-top: 40px;
+}
+
+.copyright {
+  color: rgba(255,255,255,0.6) !important;
+  font-size: 14px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-footer {
+    padding: 40px 0 20px;
+  }
+  
+  .footer-container {
+    padding: 0 16px;
+  }
+  
+  .footer-title {
+    font-size: 20px !important;
+  }
+  
+  .footer-subtitle {
+    font-size: 16px !important;
+  }
+  
+  .contact-info,
+  .service-links {
+    gap: 8px;
+  }
+  
+  .contact-item,
+  .service-links a {
+    font-size: 13px;
+  }
+}

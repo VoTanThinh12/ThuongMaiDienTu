@@ -1,0 +1,90 @@
+.app-header {
+  background: linear-gradient(135deg, #FFB7C5 0%, #FFC0CB 100%);
+  box-shadow: 0 4px 20px rgba(255, 183, 197, 0.3);
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+
+.header-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo {
+  font-size: 28px;
+  font-weight: 800;
+  color: #fff !important;
+  text-decoration: none;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: all 0.3s ease;
+}
+
+.logo:hover {
+  transform: scale(1.05);
+  text-shadow: 0 4px 8px rgba(0,0,0,0.4);
+}
+
+.nav-menu {
+  display: flex;
+  gap: 32px;
+}
+
+.nav-menu a {
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.nav-menu a:hover {
+  background: rgba(255,255,255,0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cart-button {
+  color: #fff;
+  padding: 8px;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  background: rgba(255,255,255,0.1);
+}
+
+.cart-button:hover {
+  background: rgba(255,255,255,0.2);
+  transform: scale(1.1);
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.auth-buttons .ant-btn {
+  border-radius: 8px;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.auth-buttons .ant-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}

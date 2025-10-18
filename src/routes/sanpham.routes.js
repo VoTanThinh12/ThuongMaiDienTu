@@ -3,6 +3,7 @@ const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 const { authenticateToken, checkRole } = require('../middleware/auth');
+const upload = require('../middleware/upload');
 const Joi = require('joi');
 
 const sanPhamSchema = Joi.object({
@@ -40,7 +41,7 @@ router.get('/', authenticateToken, checkRole(['quan_ly', 'nhan_vien']), async (r
 });
 
 // POST: Thêm sản phẩm (chỉ quản lý)
-router.post('/', authenticateToken, checkRole('quan_ly'), async (req, res) => {
+router.post('/', authenticateToken, checkRole('quan_ly'), upload.single('hinh_anh'), async (req, res) => {
   const { error, value } = sanPhamSchema.validate(req.body, { abortEarly: false });
   if (error) {
     return res.status(400).json({ errors: error.details.map((e) => e.message) });
@@ -53,6 +54,7 @@ router.post('/', authenticateToken, checkRole('quan_ly'), async (req, res) => {
         don_vi_tinh: value.don_vi_tinh,
         gia_ban: parseFloat(value.gia_ban),
         so_luong: parseInt(value.so_luong),
+        hinh_anh: req.file ? `/uploads/products/${req.file.filename}` : (value.hinh_anh || null)
       },
     });
     res.json(sp);
@@ -63,7 +65,7 @@ router.post('/', authenticateToken, checkRole('quan_ly'), async (req, res) => {
 });
 
 // PUT: Cập nhật sản phẩm (chỉ quản lý)
-router.put('/:id', authenticateToken, checkRole('quan_ly'), async (req, res) => {
+router.put('/:id', authenticateToken, checkRole('quan_ly'), upload.single('hinh_anh'), async (req, res) => {
   const { id } = req.params;
   const { error, value } = sanPhamSchema.validate(req.body, { abortEarly: false });
   if (error) {
@@ -78,6 +80,7 @@ router.put('/:id', authenticateToken, checkRole('quan_ly'), async (req, res) => 
         don_vi_tinh: value.don_vi_tinh,
         gia_ban: parseFloat(value.gia_ban),
         so_luong: parseInt(value.so_luong),
+        hinh_anh: req.file ? `/uploads/products/${req.file.filename}` : (value.hinh_anh || undefined)
       },
     });
     res.json(sp);

@@ -1,0 +1,128 @@
+.checkout-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  min-height: calc(100vh - 200px);
+}
+
+.checkout-page h1 {
+  font-size: 32px;
+  margin-bottom: 32px;
+}
+
+.checkout-content {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 24px;
+}
+
+.checkout-form {
+  min-width: 0;
+}
+
+.checkout-summary {
+  position: sticky;
+  top: 80px;
+  height: fit-content;
+}
+
+.order-items {
+  margin-bottom: 16px;
+}
+
+.order-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.order-item:last-child {
+  border-bottom: none;
+}
+
+.order-item-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  margin-right: 16px;
+}
+
+.order-item-name {
+  font-weight: 500;
+}
+
+.order-item-qty {
+  color: #999;
+  margin-left: 8px;
+}
+
+.order-item-price {
+  font-weight: 500;
+  color: #52c41a;
+}
+
+.order-summary-divider {
+  height: 1px;
+  background: #e8e8e8;
+  margin: 16px 0;
+}
+
+.order-summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.order-summary-row.total {
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: 16px;
+  margin-bottom: 24px;
+}
+
+.total-amount {
+  color: #52c41a;
+  font-size: 24px;
+}
+
+.voucher-discount {
+  color: #52c41a;
+  font-weight: 600;
+}
+
+.discount-amount {
+  color: #52c41a;
+  font-weight: 700;
+}
+
+/* Bank transfer block */
+.bank-line {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.bank-line span:first-child {
+  min-width: 120px;
+  color: #666;
+}
+
+.bank-hint {
+  background: #fafafa;
+  border: 1px dashed #e8e8e8;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+@media (max-width: 992px) {
+  .checkout-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .checkout-summary {
+    position: static;
+  }
+}

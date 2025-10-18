@@ -1,0 +1,142 @@
+.cart-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  min-height: calc(100vh - 200px);
+}
+
+.cart-page h1 {
+  font-size: 32px;
+  margin-bottom: 32px;
+}
+
+.cart-content {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: 24px;
+}
+
+.cart-items {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cart-item {
+  border-radius: 8px;
+}
+
+.cart-item-content {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.cart-item-image {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+
+.cart-item-info {
+  flex: 1;
+}
+
+.cart-item-info h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+}
+
+.cart-item-code {
+  color: #999;
+  font-size: 12px;
+  margin: 0 0 8px 0;
+}
+
+.cart-item-price {
+  font-size: 18px;
+  font-weight: bold;
+  color: #52c41a;
+  margin: 0;
+}
+
+.cart-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cart-item-subtotal {
+  font-size: 18px;
+  font-weight: bold;
+  color: #52c41a;
+  min-width: 120px;
+  text-align: right;
+}
+
+.cart-summary {
+  position: sticky;
+  top: 80px;
+  height: fit-content;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 16px;
+}
+
+.summary-amount {
+  font-weight: 500;
+}
+
+.summary-divider {
+  height: 1px;
+  background: #e8e8e8;
+  margin: 16px 0;
+}
+
+.summary-row.total {
+  font-size: 20px;
+  font-weight: bold;
+  margin-top: 16px;
+}
+
+.summary-total {
+  color: #52c41a;
+  font-size: 24px;
+}
+
+@media (max-width: 992px) {
+  .cart-content {
+    grid-template-columns: 1fr;
+  }
+  
+  .cart-summary {
+    position: static;
+  }
+}
+
+@media (max-width: 576px) {
+  .cart-item-content {
+    flex-wrap: wrap;
+  }
+  
+  .cart-item-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* Checkbox styling */
+.cart-header {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+}
+
+.cart-item-content .ant-checkbox-wrapper {
+  margin-right: 0;
+}

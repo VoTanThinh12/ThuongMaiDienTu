@@ -1,0 +1,72 @@
+.bank-transactions {
+  padding: 24px;
+}
+
+.bank-transactions .ant-card {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.bank-transactions .ant-statistic {
+  text-align: center;
+}
+
+.bank-transactions .ant-statistic-title {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
+}
+
+.bank-transactions .ant-statistic-content {
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.bank-transactions .ant-table-thead > tr > th {
+  background-color: #fafafa;
+  font-weight: 600;
+}
+
+.bank-transactions .ant-table-tbody > tr:hover > td {
+  background-color: #f5f5f5;
+}
+
+.bank-transactions .ant-tag {
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.bank-transactions .ant-btn {
+  border-radius: 6px;
+}
+
+.bank-transactions .ant-modal-header {
+  background-color: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.bank-transactions .ant-modal-title {
+  font-weight: 600;
+  color: #1890ff;
+}
+
+.bank-transactions code {
+  background-color: #f5f5f5;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
+}
+
+.bank-transactions .ant-statistic-content-value {
+  color: #1890ff;
+}
+
+.bank-transactions .ant-statistic-content-value-int {
+  font-size: 28px;
+}
+
+
+
+
+
+
+
