@@ -60,3 +60,4 @@ exports.getFullyAutoDetectionStatus = async (req, res) => {
 
 
 
+
