@@ -440,7 +440,7 @@ const QRPaymentModal = ({
             </div>
 
             {/* Payment Info - Compact */}
-            {paymentData && (
+            {/* {paymentData && (
               <div
                 style={{
                   backgroundColor: "#f8f9fa",
@@ -525,7 +525,7 @@ const QRPaymentModal = ({
                   </div>
                 </div>
               </div>
-            )}
+            )} */}
 
             {/* Action Buttons */}
             {/* <div style={{ textAlign: 'center', marginTop: 20 }}>
