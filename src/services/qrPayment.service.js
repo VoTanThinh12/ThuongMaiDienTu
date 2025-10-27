@@ -9,24 +9,25 @@ class QRPaymentService {
     this.startCleanupTask();
   }
   async createBankQRPayment(orderId, amount, orderInfo) {
-    const bankCode = process.env.VIETQR_BANK_CODE || 'MB';
+    const bankCode = (process.env.VIETQR_BANK_CODE || 'MB').toUpperCase();
     const accountNumber = process.env.VIETQR_ACCOUNT_NUMBER || '0346176591';
     const accountName = process.env.VIETQR_ACCOUNT_NAME || 'VO TAN THINH';
-    const verificationCode = this.generateVerificationCode(orderId, amount);
-    const enhancedOrderInfo = `${orderInfo || `Thanh toan don hang ${orderId}`} | Ma: ${verificationCode}`;
+    const numericAmount = Math.max(1, Math.round(Number(amount) || 0));
+    const verificationCode = this.generateVerificationCode(orderId, numericAmount);
+    // Keep info ASCII-only for maximum compatibility
+    const cleanedInfo = (`TT ${orderId} CODE ${verificationCode}`).replace(/[^A-Za-z0-9 _-]/g,'').slice(0,60);
 
-    // Always build QR using VietQR image URL
-    const vietqrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${Math.round(Number(amount))}&addInfo=${encodeURIComponent(enhancedOrderInfo)}`;
-    const qrCodeDataURL = await QRCode.toDataURL(vietqrUrl, { width: 300, margin: 2 });
+    // Use official VietQR image directly (more scannable by bank apps)
+    const vietqrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${numericAmount}&addInfo=${encodeURIComponent(cleanedInfo)}`;
 
     const transactionId = `bank_${orderId}_${Date.now()}`;
     const transaction = {
       id: transactionId,
       orderId,
       type: 'bank',
-      amount,
+      amount: numericAmount,
       qrContent: vietqrUrl,
-      qrCodeDataURL,
+      qrCodeDataURL: null,
       status: 'pending',
       createdAt: new Date(),
       expiresAt: new Date(Date.now() + 300000),
@@ -38,9 +39,9 @@ class QRPaymentService {
 
     return {
       transactionId,
-      qrCodeDataURL,
       qrContent: vietqrUrl,
-      amount,
+      qrCodeDataURL: null,
+      amount: numericAmount,
       expiresAt: transaction.expiresAt,
       verificationCode,
       bankInfo: { bankCode, accountNumber, accountName }
@@ -68,10 +69,7 @@ class QRPaymentService {
 
   async handleTransactionTimeout(transactionId, transaction) {
     this.activeTransactions.delete(transactionId);
-    await prisma.giao_dich_ngan_hang.updateMany({
-      where: { ma_giao_dich: transactionId, trang_thai: 'cho_xac_nhan' },
-      data: { trang_thai: 'het_han', thoi_gian_xac_nhan: new Date() }
-    });
+    await prisma.giao_dich_ngan_hang.updateMany({ where: { ma_giao_dich: transactionId, trang_thai: 'cho_xac_nhan' }, data: { trang_thai: 'het_han', thoi_gian_xac_nhan: new Date() } });
     if (global.io) {
       global.io.to(`transaction-${transactionId}`).emit('payment-timeout', { transactionId, orderId: transaction.orderId });
     }
@@ -98,30 +96,23 @@ class QRPaymentService {
           trang_thai: 'cho_xac_nhan',
           thoi_gian_tao: tx.createdAt,
           thoi_gian_het_han: tx.expiresAt,
-          noi_dung: `Thanh toan don hang ${tx.orderId} | Ma: ${tx.verificationCode}`
+          noi_dung: `TT ${tx.orderId} CODE ${tx.verificationCode}`
         }
       });
     } catch (e) { console.error('save tx error', e); }
   }
 
   async verifyBankTransaction(transactionId, verifiedBy) {
-    const dbTx = await prisma.giao_dich_ngan_hang.findFirst({
-      where: { ma_giao_dich: transactionId, trang_thai: 'cho_xac_nhan' },
-      include: { don_hang: true }
-    });
+    const dbTx = await prisma.giao_dich_ngan_hang.findFirst({ where: { ma_giao_dich: transactionId, trang_thai: 'cho_xac_nhan' }, include: { don_hang: true } });
     if (!dbTx) throw new Error('Transaction not found or processed');
 
     await prisma.$transaction(async (tx) => {
       await tx.giao_dich_ngan_hang.update({ where: { id: dbTx.id }, data: { trang_thai: 'da_xac_nhan', nguoi_xac_nhan: verifiedBy, thoi_gian_xac_nhan: new Date() } });
-      if (dbTx.don_hang) {
-        await tx.don_hang.update({ where: { id: dbTx.don_hang.id }, data: { trang_thai_thanh_toan: true, trang_thai: 'da_xac_nhan' } });
-      }
+      if (dbTx.don_hang) { await tx.don_hang.update({ where: { id: dbTx.don_hang.id }, data: { trang_thai_thanh_toan: true, trang_thai: 'da_xac_nhan' } }); }
     });
 
     this.activeTransactions.delete(transactionId);
-    if (global.io) {
-      global.io.to(`transaction-${transactionId}`).emit('payment-success', { transactionId, orderId: dbTx.ma_don_hang, verifiedBy });
-    }
+    if (global.io) { global.io.to(`transaction-${transactionId}`).emit('payment-success', { transactionId, orderId: dbTx.ma_don_hang, verifiedBy }); }
     return true;
   }
 }
