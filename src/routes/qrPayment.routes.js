@@ -10,10 +10,13 @@ router.post('/momo/:id', customerAuth, qrPaymentController.createMoMoQRPayment);
 router.get('/status/:transactionId', qrPaymentController.checkPaymentStatus);
 router.delete('/cancel/:transactionId', customerAuth, qrPaymentController.cancelTransaction);
 
-// Loại bỏ toàn bộ route admin/detection liên quan xác nhận chuyển khoản ngân hàng
+// 🚀 NEW: Bank Webhook - Nhận thông báo từ gateway khi có chuyển khoản
+router.post('/webhook/bank', qrPaymentController.handleBankWebhook);
 
 // Webhook từ MoMo
 router.post('/webhook/momo', qrPaymentController.updateMoMoPaymentStatus);
 
-module.exports = router;
+// 🎯 Admin route: Manual verify transaction (backup plan)
+router.post('/admin/verify/:transactionId', authenticateToken, checkRole(['admin']), qrPaymentController.manualVerifyTransaction);
 
+module.exports = router;
