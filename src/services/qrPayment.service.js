@@ -9,14 +9,16 @@ class QRPaymentService {
     this.startCleanupTask();
   }
   async createBankQRPayment(orderId, amount, orderInfo) {
-    const bankCode = (process.env.VIETQR_BANK_CODE || 'MB').toUpperCase();
-    const accountNumber = process.env.VIETQR_ACCOUNT_NUMBER || '0346176591';
+    // Hard-code MB Bank to avoid any accidental bank switch
+    const bankCode = 'MB';
+    const accountNumber = '0346176591';
     const accountName = process.env.VIETQR_ACCOUNT_NAME || 'VO TAN THINH';
+
     const numericAmount = Math.max(1, Math.round(Number(amount) || 0));
     const verificationCode = this.generateVerificationCode(orderId, numericAmount);
     const cleanedInfo = (`TT ${orderId} CODE ${verificationCode}`).replace(/[^A-Za-z0-9 _-]/g,'').slice(0,60);
 
-    // Use full VietQR template (with logo and layout)
+    // Use full VietQR template for MB Bank only
     const vietqrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}.jpg?amount=${numericAmount}&addInfo=${encodeURIComponent(cleanedInfo)}`;
 
     const transactionId = `bank_${orderId}_${Date.now()}`;
