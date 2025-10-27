@@ -14,11 +14,10 @@ class QRPaymentService {
     const accountName = process.env.VIETQR_ACCOUNT_NAME || 'VO TAN THINH';
     const numericAmount = Math.max(1, Math.round(Number(amount) || 0));
     const verificationCode = this.generateVerificationCode(orderId, numericAmount);
-    // Keep info ASCII-only for maximum compatibility
     const cleanedInfo = (`TT ${orderId} CODE ${verificationCode}`).replace(/[^A-Za-z0-9 _-]/g,'').slice(0,60);
 
-    // Use official VietQR image directly (more scannable by bank apps)
-    const vietqrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${numericAmount}&addInfo=${encodeURIComponent(cleanedInfo)}`;
+    // Use full VietQR template (with logo and layout)
+    const vietqrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}.jpg?amount=${numericAmount}&addInfo=${encodeURIComponent(cleanedInfo)}`;
 
     const transactionId = `bank_${orderId}_${Date.now()}`;
     const transaction = {
