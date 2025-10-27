@@ -18,12 +18,18 @@ class QRPaymentService {
     try {
       console.log('Creating bank QR payment:', { orderId, amount, orderInfo });
       
-      // Tạo mã QR cho VietQR (Vietcombank)
-      const bankCode = process.env.VIETQR_BANK_CODE || 'VCB';
-      const accountNumber = process.env.VIETQR_ACCOUNT_NUMBER || '1027077985';
-      const accountName = process.env.VIETQR_ACCOUNT_NAME || 'PHAN HOAI THAN';
+      // 🚀 Cập nhật cho MB Bank
+      const bankCode = process.env.VIETQR_BANK_CODE || 'MB';
+      const accountNumber = process.env.VIETQR_ACCOUNT_NUMBER || '0346176591';
+      const accountName = process.env.VIETQR_ACCOUNT_NAME || 'VO TAN THINH';
       
       console.log('Bank info:', { bankCode, accountNumber, accountName });
+      
+      // Tạo mã xác minh trước để đưa vào nội dung chuyển khoản
+      const verificationCode = this.generateVerificationCode(orderId, amount);
+      
+      // 🔑 Đảm bảo nội dung chuyển khoản có chứa mã xác minh
+      const enhancedOrderInfo = `${orderInfo || `Thanh toan don hang ${orderId}`} | Ma: ${verificationCode}`;
       
       // Tạo QR code thực từ API VietQR
       let qrCodeDataURL;
@@ -33,14 +39,14 @@ class QRPaymentService {
           accountNumber,
           accountName,
           amount: Math.round(Number(amount)),
-          orderInfo: orderInfo || `Thanh toan don hang ${orderId}`,
+          orderInfo: enhancedOrderInfo,
           orderId
         });
         console.log('QR code generated successfully from VietQR API');
       } catch (qrError) {
         console.error('Failed to generate QR from VietQR API, using fallback:', qrError.message);
         // Fallback: tạo QR code với URL
-        const vietqrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${Math.round(Number(amount))}&addInfo=${encodeURIComponent(orderInfo || `Thanh toan don hang ${orderId}`)}`;
+        const vietqrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${Math.round(Number(amount))}&addInfo=${encodeURIComponent(enhancedOrderInfo)}`;
         qrCodeDataURL = await QRCode.toDataURL(vietqrUrl, {
           width: 300,
           margin: 2,
@@ -54,7 +60,7 @@ class QRPaymentService {
 
       // Lưu thông tin giao dịch
       const transactionId = `bank_${orderId}_${Date.now()}`;
-      const qrContent = `VietQR://${bankCode}/${accountNumber}/${Math.round(Number(amount))}/${orderInfo || `Thanh toan don hang ${orderId}`}`;
+      const qrContent = `VietQR://${bankCode}/${accountNumber}/${Math.round(Number(amount))}/${enhancedOrderInfo}`;
       
       const transaction = {
         id: transactionId,
@@ -65,8 +71,8 @@ class QRPaymentService {
         qrCodeDataURL,
         status: 'pending',
         createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 60000), // 1 phút
-        verificationCode: this.generateVerificationCode(orderId, amount) // Mã xác minh
+        expiresAt: new Date(Date.now() + 300000), // 🚀 Tăng lên 5 phút để có thời gian test
+        verificationCode // Mã xác minh
       };
 
       this.activeTransactions.set(transactionId, transaction);
@@ -90,9 +96,9 @@ class QRPaymentService {
         bankInfo: {
           bankCode,
           accountNumber,
-          accountName: 'PHAN HOAI THAN',
-          bankName: 'Vietcombank',
-          branch: 'Chi nhánh TP.HCM'
+          accountName: accountName, // 🚀 Sử dụng tên thực từ .env
+          bankName: bankCode === 'MB' ? 'MB Bank' : (bankCode === 'VCB' ? 'Vietcombank' : 'Ngân hàng'),
+          branch: bankCode === 'MB' ? 'Chi nhánh MB Bank' : 'Chi nhánh TP.HCM'
         }
       };
     } catch (error) {
@@ -136,7 +142,7 @@ class QRPaymentService {
         qrCodeDataURL,
         status: 'pending',
         createdAt: new Date(),
-        expiresAt: new Date(Date.now() + 60000), // 1 phút
+        expiresAt: new Date(Date.now() + 300000), // 5 phút
         momoRequestId: momoData.requestId
       };
 
@@ -363,7 +369,7 @@ class QRPaymentService {
           trang_thai: 'cho_xac_nhan',
           thoi_gian_tao: transaction.createdAt,
           thoi_gian_het_han: transaction.expiresAt,
-          noi_dung: `Thanh toan don hang ${transaction.orderId}`
+          noi_dung: `Thanh toan don hang ${transaction.orderId} | Ma: ${transaction.verificationCode}` // 🔑 Đảm bảo nội dung có mã xác minh
         }
       });
     } catch (error) {
@@ -521,7 +527,7 @@ class QRPaymentService {
     }
   }
 
-  // Phân tích sao kê ngân hàng
+  // Phân tích sao kê ngân hàng (cập nhật cho MB Bank)
   async parseBankStatement(fileContent) {
     try {
       // Đây là một ví dụ đơn giản, bạn có thể cải thiện logic này
@@ -529,10 +535,10 @@ class QRPaymentService {
       const transactions = [];
 
       for (const line of lines) {
-        // Tìm các dòng chứa thông tin giao dịch
-        if (line.includes('PHAN HOAI THAN') || line.includes('1027077985')) {
+        // Tìm các dòng chứa thông tin giao dịch MB Bank
+        if (line.includes('VO TAN THINH') || line.includes('0346176591')) {
           // Parse thông tin giao dịch từ sao kê
-          // Logic này cần được tùy chỉnh theo format sao kê của Vietcombank
+          // Logic này cần được tùy chỉnh theo format sao kê của MB Bank
           const match = line.match(/(\d{2}\/\d{2}\/\d{4})\s+(\d+\.?\d*)\s+(.+)/);
           if (match) {
             transactions.push({
