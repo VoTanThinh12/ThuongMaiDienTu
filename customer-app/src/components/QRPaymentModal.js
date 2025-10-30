@@ -414,7 +414,7 @@ const QRPaymentModal = ({
               </div>
               {paymentData?.qrCodeDataURL ? (
                 <img
-                  src={paymentData.qrCodeDataURL}
+                  src={paymentData.qrContent}
                   alt="QR Code"
                   style={{
                     width: 300,
@@ -426,7 +426,7 @@ const QRPaymentModal = ({
                 />
               ) : (
                 <img
-                  src="/cuối-cùng.png"
+                  src={paymentData?.qrContent || "/cuối-cùng.png"}
                   alt="QR Code"
                   style={{
                     width: 300,
@@ -440,7 +440,7 @@ const QRPaymentModal = ({
             </div>
 
             {/* Payment Info - Compact */}
-            {/* {paymentData && (
+            {paymentData && (
               <div
                 style={{
                   backgroundColor: "#f8f9fa",
@@ -463,7 +463,7 @@ const QRPaymentModal = ({
                     </span>
                     <br />
                     <strong style={{ fontSize: 16 }}>
-                      {paymentData.bankInfo?.bankName || "Vietcombank"}
+                      {paymentData.bankInfo?.bankName || "MB Bank"}
                     </strong>
                   </div>
                   <div style={{ fontSize: 15 }}>
@@ -481,7 +481,7 @@ const QRPaymentModal = ({
                     </span>
                     <br />
                     <strong style={{ color: "#1890ff", fontSize: 16 }}>
-                      {paymentData.bankInfo?.accountNumber || "1027077985"}
+                      {paymentData.bankInfo?.accountNumber || "0346176591"}
                     </strong>
                   </div>
                   <div style={{ fontSize: 15 }}>
@@ -490,7 +490,7 @@ const QRPaymentModal = ({
                     </span>
                     <br />
                     <strong style={{ fontSize: 16 }}>
-                      {paymentData.bankInfo?.accountName || "PHAN HOAI THAN"}
+                      {paymentData.bankInfo?.accountName || "VO TAN THINH"}
                     </strong>
                   </div>
                 </div>
@@ -525,7 +525,7 @@ const QRPaymentModal = ({
                   </div>
                 </div>
               </div>
-            )} */}
+            )}
 
             {/* Action Buttons */}
             {/* <div style={{ textAlign: 'center', marginTop: 20 }}>
