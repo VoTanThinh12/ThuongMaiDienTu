@@ -1,10 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Card, Form, Input, Radio, Button, message, Spin, Empty, Space, Tooltip } from 'antd';
-import { cartAPI, orderAPI, paymentAPI } from '../utils/api';
-import VoucherButton from '../components/VoucherButton';
-import QRPaymentModal from '../components/QRPaymentModal';
-import './Checkout.css';
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Card,
+  Form,
+  Input,
+  Radio,
+  Button,
+  message,
+  Spin,
+  Empty,
+  Space,
+  Tooltip,
+} from "antd";
+import { cartAPI, orderAPI, paymentAPI } from "../utils/api";
+import VoucherButton from "../components/VoucherButton";
+import QRPaymentModal from "../components/QRPaymentModal";
+import "./Checkout.css";
 
 const Checkout = ({ onCartUpdate }) => {
   const [cartItems, setCartItems] = useState([]);
@@ -14,17 +25,28 @@ const Checkout = ({ onCartUpdate }) => {
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
-  const selectedMethod = Form.useWatch('phuong_thuc_thanh_toan', form);
+  const selectedMethod = Form.useWatch("phuong_thuc_thanh_toan", form);
 
   const [paymentConfig, setPaymentConfig] = useState(null);
-  const bankInfo = paymentConfig?.bank || { vietqrBankCode: '', bankName: '', accountName: '', accountNumber: '', branch: '' };
-  const staticBank = { bankName: 'Vietcombank', accountName: 'PHAN HOAI THAN', accountNumber: '1027077985', branch: 'Chi nhánh TP.HCM' };
+  const bankInfo = paymentConfig?.bank || {
+    vietqrBankCode: "",
+    bankName: "",
+    accountName: "",
+    accountNumber: "",
+    branch: "",
+  };
+  const staticBank = {
+    bankName: "Mbbank",
+    accountName: "VO TAN THINH",
+    accountNumber: "0346176591",
+    branch: "Chi nhánh TP.HCM",
+  };
 
-  const [qrPaymentModal, setQrPaymentModal] = useState({ 
-    visible: false, 
-    orderId: null, 
-    paymentMethod: null, 
-    amount: 0 
+  const [qrPaymentModal, setQrPaymentModal] = useState({
+    visible: false,
+    orderId: null,
+    paymentMethod: null,
+    amount: 0,
   });
 
   const copyText = async (text, label) => {
@@ -32,25 +54,25 @@ const Checkout = ({ onCartUpdate }) => {
       await navigator.clipboard.writeText(text);
       message.success(`Đã sao chép ${label}`);
     } catch {
-      message.error('Không thể sao chép, vui lòng copy thủ công');
+      message.error("Không thể sao chép, vui lòng copy thủ công");
     }
   };
 
   const openQRPaymentModal = (orderId, paymentMethod, amount) => {
-    setQrPaymentModal({ 
-      visible: true, 
-      orderId, 
-      paymentMethod, 
-      amount 
+    setQrPaymentModal({
+      visible: true,
+      orderId,
+      paymentMethod,
+      amount,
     });
   };
 
   const closeQRPaymentModal = () => {
-    setQrPaymentModal({ 
-      visible: false, 
-      orderId: null, 
-      paymentMethod: null, 
-      amount: 0 
+    setQrPaymentModal({
+      visible: false,
+      orderId: null,
+      paymentMethod: null,
+      amount: 0,
     });
   };
 
@@ -60,16 +82,16 @@ const Checkout = ({ onCartUpdate }) => {
       selectedItems.forEach(async (itemId) => {
         await cartAPI.removeFromCart(itemId);
       });
-      localStorage.removeItem('selectedCartItems');
+      localStorage.removeItem("selectedCartItems");
     } catch {}
-    
+
     if (onCartUpdate) onCartUpdate();
     navigate(`/orders/${data.orderId}`);
   };
 
   const handlePaymentTimeout = (data) => {
     // Có thể hủy đơn hàng nếu cần
-    message.warning('Giao dịch đã hết hạn!');
+    message.warning("Giao dịch đã hết hạn!");
   };
 
   useEffect(() => {
@@ -82,45 +104,51 @@ const Checkout = ({ onCartUpdate }) => {
     try {
       const response = await cartAPI.getCart();
       if (response.data.length === 0) {
-        message.warning('Giỏ hàng trống');
-        navigate('/cart');
+        message.warning("Giỏ hàng trống");
+        navigate("/cart");
         return;
       }
-      
+
       // Lấy danh sách sản phẩm đã chọn từ localStorage
-      const selectedItemIds = JSON.parse(localStorage.getItem('selectedCartItems') || '[]');
-      
+      const selectedItemIds = JSON.parse(
+        localStorage.getItem("selectedCartItems") || "[]"
+      );
+
       if (selectedItemIds.length === 0) {
-        message.warning('Vui lòng chọn sản phẩm để đặt hàng');
-        navigate('/cart');
+        message.warning("Vui lòng chọn sản phẩm để đặt hàng");
+        navigate("/cart");
         return;
       }
-      
+
       // Chỉ lấy các sản phẩm đã được chọn
-      const filteredItems = response.data.filter(item => selectedItemIds.includes(item.id));
-      
+      const filteredItems = response.data.filter((item) =>
+        selectedItemIds.includes(item.id)
+      );
+
       if (filteredItems.length === 0) {
-        message.warning('Không tìm thấy sản phẩm đã chọn');
-        navigate('/cart');
+        message.warning("Không tìm thấy sản phẩm đã chọn");
+        navigate("/cart");
         return;
       }
-      
+
       setCartItems(filteredItems);
       setSelectedItems(selectedItemIds);
     } catch (error) {
-      message.error('Lỗi khi tải giỏ hàng');
-      navigate('/cart');
+      message.error("Lỗi khi tải giỏ hàng");
+      navigate("/cart");
     } finally {
       setLoading(false);
     }
   };
 
   const loadCustomerInfo = () => {
-    const customerInfo = JSON.parse(localStorage.getItem('customerInfo') || '{}');
+    const customerInfo = JSON.parse(
+      localStorage.getItem("customerInfo") || "{}"
+    );
     form.setFieldsValue({
-      ho_ten_nguoi_nhan: customerInfo.ho_ten || '',
-      so_dien_thoai: customerInfo.so_dien_thoai || '',
-      phuong_thuc_thanh_toan: 'cod'
+      ho_ten_nguoi_nhan: customerInfo.ho_ten || "",
+      so_dien_thoai: customerInfo.so_dien_thoai || "",
+      phuong_thuc_thanh_toan: "cod",
     });
   };
 
@@ -129,20 +157,20 @@ const Checkout = ({ onCartUpdate }) => {
       const { data } = await paymentAPI.getPublicConfig();
       setPaymentConfig(data);
     } catch (e) {
-      console.error('Load payment config error', e);
+      console.error("Load payment config error", e);
     }
   };
 
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
+    return new Intl.NumberFormat("vi-VN", {
+      style: "currency",
+      currency: "VND",
     }).format(amount);
   };
 
   const calculateTotal = () => {
     return cartItems.reduce((total, item) => {
-      return total + (Number(item.san_pham.gia_ban) * item.so_luong);
+      return total + Number(item.san_pham.gia_ban) * item.so_luong;
     }, 0);
   };
 
@@ -158,51 +186,54 @@ const Checkout = ({ onCartUpdate }) => {
       // Thêm thông tin voucher vào order data
       const orderData = {
         ...values,
-        voucher_info: appliedVoucher ? {
-          ma_voucher: appliedVoucher.voucher.ma_voucher,
-          so_tien_giam: appliedVoucher.so_tien_giam
-        } : null,
-        selected_item_ids: selectedItems
+        voucher_info: appliedVoucher
+          ? {
+              ma_voucher: appliedVoucher.voucher.ma_voucher,
+              so_tien_giam: appliedVoucher.so_tien_giam,
+            }
+          : null,
+        selected_item_ids: selectedItems,
       };
-      
+
       const response = await orderAPI.createOrder(orderData);
       const orderId = response.data.don_hang.id;
       const orderCode = response.data.don_hang.ma_don_hang;
 
       const method = values.phuong_thuc_thanh_toan;
       const finalAmount = calculateFinalTotal();
-      
-      if (method === 'bank_transfer') {
+
+      if (method === "bank_transfer") {
         // Sử dụng QR Payment Modal cho bank transfer
-        openQRPaymentModal(orderId, 'bank', finalAmount);
+        openQRPaymentModal(orderId, "bank", finalAmount);
         return;
       }
-      
-      if (method === 'momo') {
+
+      if (method === "momo") {
         // Sử dụng QR Payment Modal cho MoMo
-        openQRPaymentModal(orderId, 'momo', finalAmount);
+        openQRPaymentModal(orderId, "momo", finalAmount);
         return;
       }
 
-
-      if (method === 'cod') {
+      if (method === "cod") {
         // Hiển thị thông tin COD
-        message.success('Đặt hàng thành công! Vui lòng chuẩn bị thanh toán tiền mặt khi nhận hàng.');
-        
+        message.success(
+          "Đặt hàng thành công! Vui lòng chuẩn bị thanh toán tiền mặt khi nhận hàng."
+        );
+
         // Dọn giỏ hàng đã chọn
         try {
           for (const itemId of selectedItems) {
             await cartAPI.removeFromCart(itemId);
           }
-          localStorage.removeItem('selectedCartItems');
+          localStorage.removeItem("selectedCartItems");
         } catch {}
         if (onCartUpdate) onCartUpdate();
-        
+
         navigate(`/orders/${orderId}`);
         return;
       }
 
-      if (method === 'stripe') {
+      if (method === "stripe") {
         const { data } = await paymentAPI.createStripeForCustomer(orderId);
         if (data?.url) {
           window.location.href = data.url; // Stripe sẽ điều hướng trang
@@ -211,30 +242,31 @@ const Checkout = ({ onCartUpdate }) => {
       }
 
       // Với bank_transfer hoặc credit_card (placeholder), chỉ điều hướng về chi tiết đơn
-      message.success('Đặt hàng thành công!');
+      message.success("Đặt hàng thành công!");
 
       try {
         for (const itemId of selectedItems) {
           await cartAPI.removeFromCart(itemId);
         }
-        localStorage.removeItem('selectedCartItems');
+        localStorage.removeItem("selectedCartItems");
       } catch (cartError) {
-        console.error('Lỗi khi xóa sản phẩm khỏi giỏ hàng:', cartError);
+        console.error("Lỗi khi xóa sản phẩm khỏi giỏ hàng:", cartError);
       }
 
       if (onCartUpdate) onCartUpdate();
       navigate(`/orders/${orderId}`);
     } catch (error) {
-      message.error(error.response?.data?.error || 'Có lỗi xảy ra khi đặt hàng!');
+      message.error(
+        error.response?.data?.error || "Có lỗi xảy ra khi đặt hàng!"
+      );
     } finally {
       setSubmitting(false);
     }
   };
 
-
   if (loading) {
     return (
-      <div style={{ textAlign: 'center', padding: '100px 0' }}>
+      <div style={{ textAlign: "center", padding: "100px 0" }}>
         <Spin size="large" />
       </div>
     );
@@ -259,45 +291,41 @@ const Checkout = ({ onCartUpdate }) => {
               <Form.Item
                 name="ho_ten_nguoi_nhan"
                 label="Họ tên người nhận"
-                rules={[{ required: true, message: 'Vui lòng nhập họ tên!' }]}
+                rules={[{ required: true, message: "Vui lòng nhập họ tên!" }]}
               >
                 <Input size="large" placeholder="Nguyễn Văn A" />
               </Form.Item>
-
               <Form.Item
                 name="so_dien_thoai"
                 label="Số điện thoại"
                 rules={[
-                  { required: true, message: 'Vui lòng nhập số điện thoại!' },
-                  { pattern: /^[0-9]{10,11}$/, message: 'Số điện thoại không hợp lệ!' }
+                  { required: true, message: "Vui lòng nhập số điện thoại!" },
+                  {
+                    pattern: /^[0-9]{10,11}$/,
+                    message: "Số điện thoại không hợp lệ!",
+                  },
                 ]}
               >
                 <Input size="large" placeholder="0909123456" />
               </Form.Item>
-
               <Form.Item
                 name="dia_chi_giao_hang"
                 label="Địa chỉ giao hàng"
-                rules={[{ required: true, message: 'Vui lòng nhập địa chỉ!' }]}
+                rules={[{ required: true, message: "Vui lòng nhập địa chỉ!" }]}
               >
-                <Input.TextArea 
-                  rows={3} 
-                  size="large" 
+                <Input.TextArea
+                  rows={3}
+                  size="large"
                   placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành phố"
                 />
               </Form.Item>
-
-              <Form.Item
-                name="ghi_chu"
-                label="Ghi chú (tùy chọn)"
-              >
-                <Input.TextArea 
-                  rows={2} 
-                  size="large" 
+              <Form.Item name="ghi_chu" label="Ghi chú (tùy chọn)">
+                <Input.TextArea
+                  rows={2}
+                  size="large"
                   placeholder="Ghi chú cho người giao hàng..."
                 />
               </Form.Item>
-
               <Form.Item
                 name="phuong_thuc_thanh_toan"
                 label="Phương thức thanh toán"
@@ -306,20 +334,28 @@ const Checkout = ({ onCartUpdate }) => {
                 <Radio.Group>
                   <Space direction="vertical" size={14}>
                     <div>
-                      <div style={{ fontWeight: 600, marginBottom: 6 }}>1) Thanh toán khi nhận hàng</div>
+                      <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                        1) Thanh toán khi nhận hàng
+                      </div>
                       <Radio value="cod">COD - Trả tiền mặt khi nhận</Radio>
                     </div>
 
                     <div>
-                      <div style={{ fontWeight: 600, margin: '10px 0 6px' }}>2) Ngân hàng & Ví điện tử nội địa</div>
+                      <div style={{ fontWeight: 600, margin: "10px 0 6px" }}>
+                        2) Ngân hàng & Ví điện tử nội địa
+                      </div>
                       <Space direction="vertical">
-                        <Radio value="bank_transfer">Chuyển khoản ngân hàng (Vietcombank)</Radio>
+                        <Radio value="bank_transfer">
+                          Chuyển khoản ngân hàng (Vietcombank)
+                        </Radio>
                         <Radio value="momo">Ví MoMo</Radio>
                       </Space>
                     </div>
 
                     <div>
-                      <div style={{ fontWeight: 600, margin: '10px 0 6px' }}>3) Thẻ quốc tế & cổng toàn cầu</div>
+                      <div style={{ fontWeight: 600, margin: "10px 0 6px" }}>
+                        3) Thẻ quốc tế & cổng toàn cầu
+                      </div>
                       <Space direction="vertical">
                         <Radio value="stripe">Stripe (Visa/MasterCard)</Radio>
                       </Space>
@@ -327,42 +363,6 @@ const Checkout = ({ onCartUpdate }) => {
                   </Space>
                 </Radio.Group>
               </Form.Item>
-
-              {selectedMethod === 'bank_transfer' && (
-                <Card title="Thông tin chuyển khoản" style={{ marginTop: 12 }}>
-                  <div className="bank-line">
-                    <span>Ngân hàng:</span>
-                    <span>{staticBank.bankName}</span>
-                    <Button size="small" onClick={() => copyText(staticBank.bankName, 'ngân hàng')}>Sao chép</Button>
-                  </div>
-                  <div className="bank-line">
-                    <span>Chi nhánh:</span>
-                    <span>{staticBank.branch}</span>
-                    <Button size="small" onClick={() => copyText(staticBank.branch, 'chi nhánh')}>Sao chép</Button>
-                  </div>
-                  <div className="bank-line">
-                    <span>Tên tài khoản:</span>
-                    <span>{staticBank.accountName}</span>
-                    <Button size="small" onClick={() => copyText(staticBank.accountName, 'tên tài khoản')}>Sao chép</Button>
-                  </div>
-                  <div className="bank-line">
-                    <span>Số tài khoản:</span>
-                    <span style={{ fontWeight: 600 }}>{staticBank.accountNumber}</span>
-                    <Button size="small" type="primary" onClick={() => copyText(staticBank.accountNumber, 'số tài khoản')}>Sao chép</Button>
-                  </div>
-                  <div className="bank-hint" style={{ marginTop: 8, color: '#666' }}>
-                    Ghi nội dung chuyển khoản: <b>SĐT người nhận</b> hoặc <b>mã đơn sẽ hiển thị sau khi đặt</b>.
-                  </div>
-                  <div style={{ marginTop: 12 }}>
-                    <div style={{ marginBottom: 8, fontWeight: 500 }}>Quét mã QR:</div>
-                    <img
-                      alt="VietQR"
-                      style={{ width: 220, height: 220, objectFit: 'contain', borderRadius: 8, border: '1px solid #eee' }}
-                      src={'/cuối-cùng.png'}
-                    />
-                  </div>
-                </Card>
-              )}
             </Form>
           </Card>
         </div>
@@ -370,14 +370,18 @@ const Checkout = ({ onCartUpdate }) => {
         <div className="checkout-summary">
           <Card title="Đơn hàng của bạn">
             <div className="order-items">
-              {cartItems.map(item => (
+              {cartItems.map((item) => (
                 <div key={item.id} className="order-item">
                   <div className="order-item-info">
-                    <span className="order-item-name">{item.san_pham.ten_san_pham}</span>
+                    <span className="order-item-name">
+                      {item.san_pham.ten_san_pham}
+                    </span>
                     <span className="order-item-qty">x{item.so_luong}</span>
                   </div>
                   <span className="order-item-price">
-                    {formatCurrency(Number(item.san_pham.gia_ban) * item.so_luong)}
+                    {formatCurrency(
+                      Number(item.san_pham.gia_ban) * item.so_luong
+                    )}
                   </span>
                 </div>
               ))}
@@ -404,15 +408,19 @@ const Checkout = ({ onCartUpdate }) => {
             {appliedVoucher && (
               <div className="order-summary-row voucher-discount">
                 <span>Giảm giá ({appliedVoucher.voucher.ten_voucher}):</span>
-                <span className="discount-amount">-{formatCurrency(appliedVoucher.so_tien_giam)}</span>
+                <span className="discount-amount">
+                  -{formatCurrency(appliedVoucher.so_tien_giam)}
+                </span>
               </div>
             )}
-            
+
             <div className="order-summary-divider"></div>
-            
+
             <div className="order-summary-row total">
               <span>Tổng cộng:</span>
-              <span className="total-amount">{formatCurrency(calculateFinalTotal())}</span>
+              <span className="total-amount">
+                {formatCurrency(calculateFinalTotal())}
+              </span>
             </div>
 
             <Button

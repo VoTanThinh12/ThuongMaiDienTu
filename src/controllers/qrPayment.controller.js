@@ -31,9 +31,14 @@ exports.createBankQRPayment = async (req, res) => {
       `Thanh toan don hang ${order.ma_don_hang}`
     );
 
-    return res.json({ success: true, data: qrPayment, message: "QR code thanh toán ngân hàng đã được tạo" });
+    return res.json({
+      success: true,
+      data: qrPayment,
+      message: "QR code thanh toán ngân hàng đã được tạo",
+    });
   } catch (error) {
-    if (error.statusCode) return res.status(error.statusCode).json({ error: error.message });
+    if (error.statusCode)
+      return res.status(error.statusCode).json({ error: error.message });
     console.error("Create bank QR payment error:", error);
     return res.status(500).json({ error: "Lỗi tạo QR thanh toán ngân hàng" });
   }
@@ -63,9 +68,14 @@ exports.createMoMoQRPayment = async (req, res) => {
       `Thanh toan don hang ${order.ma_don_hang}`
     );
 
-    return res.json({ success: true, data: qrPayment, message: "QR code thanh toán MoMo đã được tạo" });
+    return res.json({
+      success: true,
+      data: qrPayment,
+      message: "QR code thanh toán MoMo đã được tạo",
+    });
   } catch (error) {
-    if (error.statusCode) return res.status(error.statusCode).json({ error: error.message });
+    if (error.statusCode)
+      return res.status(error.statusCode).json({ error: error.message });
     console.error("Create MoMo QR payment error:", error);
     return res.status(500).json({ error: "Lỗi tạo QR thanh toán MoMo" });
   }
@@ -79,7 +89,9 @@ exports.checkPaymentStatus = async (req, res) => {
     return res.json({ success: true, data: status });
   } catch (error) {
     console.error("Check payment status error:", error);
-    return res.status(500).json({ error: "Lỗi kiểm tra trạng thái thanh toán" });
+    return res
+      .status(500)
+      .json({ error: "Lỗi kiểm tra trạng thái thanh toán" });
   }
 };
 
@@ -88,7 +100,10 @@ exports.cancelTransaction = async (req, res) => {
   try {
     const { transactionId } = req.params;
     const cancelled = qrPaymentService.cancelTransaction(transactionId);
-    if (!cancelled) return res.status(404).json({ success: false, message: "Không tìm thấy giao dịch" });
+    if (!cancelled)
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy giao dịch" });
     return res.json({ success: true, message: "Giao dịch đã được hủy" });
   } catch (error) {
     console.error("Cancel transaction error:", error);
@@ -103,33 +118,61 @@ exports.handleBankWebhook = async (req, res) => {
     console.log("🔔 Bank webhook received:", JSON.stringify(body, null, 2));
 
     if (!verifyWebhookSignature(body, req.headers))
-      return res.status(401).json({ success: false, message: "Invalid signature" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid signature" });
 
     const paymentData = normalizeWebhookPayload(body);
-    if (!paymentData) return res.status(400).json({ success: false, message: "Invalid payload" });
+    if (!paymentData)
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid payload" });
 
-    const { amount, description, transactionRef, bankCode, accountNumber } = paymentData;
+    const { amount, description, transactionRef, bankCode, accountNumber } =
+      paymentData;
 
     const expectedAccount = process.env.VIETQR_ACCOUNT_NUMBER || "";
     if (expectedAccount && accountNumber && accountNumber !== expectedAccount)
       return res.json({ success: true, ignored: true });
 
-    const matchedTx = await findMatchingPendingTransactionByDesc(amount, description);
+    const matchedTx = await findMatchingPendingTransactionByDesc(
+      amount,
+      description
+    );
     if (!matchedTx) {
-      await logUnmatchedWebhook({ amount, description, transactionRef, bankCode, accountNumber, webhookBody: body });
+      await logUnmatchedWebhook({
+        amount,
+        description,
+        transactionRef,
+        bankCode,
+        accountNumber,
+        webhookBody: body,
+      });
       return res.json({ success: true, matched: false });
     }
 
     await prisma.giao_dich_ngan_hang.update({
       where: { id: matchedTx.id },
-      data: { ref_gateway: String(transactionRef || ""), ghi_chu: `BANK:${bankCode}` },
+      data: {
+        ref_gateway: String(transactionRef || ""),
+        ghi_chu: `BANK:${bankCode}`,
+      },
     });
 
-    await qrPaymentService.verifyBankTransaction(matchedTx.ma_giao_dich, "BANK_WEBHOOK_AUTO");
-    return res.json({ success: true, matched: true, transactionId: matchedTx.ma_giao_dich });
+    await qrPaymentService.verifyBankTransaction(
+      matchedTx.ma_giao_dich,
+      "BANK_WEBHOOK_AUTO"
+    );
+    return res.json({
+      success: true,
+      matched: true,
+      transactionId: matchedTx.ma_giao_dich,
+    });
   } catch (error) {
     console.error("❌ Bank webhook error:", error);
-    return res.status(500).json({ success: false, error: "Internal server error" });
+    return res
+      .status(500)
+      .json({ success: false, error: "Internal server error" });
   }
 };
 
@@ -144,8 +187,14 @@ exports.updateMoMoPaymentStatus = async (req, res) => {
     const { orderId, resultCode } = params;
     await qrPaymentService.updatePaymentStatus(orderId, "paid");
 
-    const order = await prisma.don_hang.findFirst({ where: { ma_don_hang: orderId } });
-    if (order && Number(resultCode) === 0 && order.trang_thai === "cho_xac_nhan") {
+    const order = await prisma.don_hang.findFirst({
+      where: { ma_don_hang: orderId },
+    });
+    if (
+      order &&
+      Number(resultCode) === 0 &&
+      order.trang_thai === "cho_xac_nhan"
+    ) {
       await prisma.don_hang.update({
         where: { id: order.id },
         data: { trang_thai_thanh_toan: true, trang_thai: "da_xac_nhan" },
@@ -159,14 +208,43 @@ exports.updateMoMoPaymentStatus = async (req, res) => {
   }
 };
 
+// ============ ADMIN MANUAL VERIFY ============
+exports.manualVerifyTransaction = async (req, res) => {
+  try {
+    const { transactionId } = req.params;
+    const { userId } = req; // from admin middleware
+
+    if (!userId)
+      return res
+        .status(401)
+        .json({ error: "Chỉ admin mới có thể xác nhận thủ công" });
+
+    await qrPaymentService.verifyBankTransaction(
+      transactionId,
+      `ADMIN_${userId}`
+    );
+    return res.json({
+      success: true,
+      message: "Giao dịch đã được xác nhận thủ công",
+    });
+  } catch (error) {
+    console.error("Manual verify transaction error:", error);
+    return res.status(500).json({ error: error.message });
+  }
+};
+
 // ============ HELPERS ============
 function verifyWebhookSignature(body, headers) {
   const secret = process.env.BANK_WEBHOOK_SECRET;
   if (!secret) return true; // dev mode: skip
-  const signature = headers["x-signature"] || headers["X-Signature"] || headers["signature"];
+  const signature =
+    headers["x-signature"] || headers["X-Signature"] || headers["signature"];
   if (!signature) return false;
   if (process.env.SEPAY_TOKEN) {
-    const expected = crypto.createHmac("sha256", secret).update(JSON.stringify(body)).digest("hex");
+    const expected = crypto
+      .createHmac("sha256", secret)
+      .update(JSON.stringify(body))
+      .digest("hex");
     return signature === expected;
   }
   if (process.env.CASSO_API_KEY) return signature === secret;
@@ -174,6 +252,7 @@ function verifyWebhookSignature(body, headers) {
 }
 
 function normalizeWebhookPayload(body) {
+  // Sepay.vn
   if (body.type && body.data) {
     const d = body.data;
     return {
@@ -184,6 +263,7 @@ function normalizeWebhookPayload(body) {
       accountNumber: String(d.accountNumber || d.account || ""),
     };
   }
+  // Casso.vn
   if (body.error === 0 && body.data && Array.isArray(body.data.records)) {
     const r = body.data.records[0];
     if (r) {
@@ -196,13 +276,16 @@ function normalizeWebhookPayload(body) {
       };
     }
   }
+  // Generic
   if (body.amount && body.description) {
     return {
       amount: Number(body.amount),
       description: String(body.description),
       transactionRef: String(body.transactionRef || body.id || ""),
       bankCode: String(body.bankCode || "MB").toUpperCase(),
-      accountNumber: String(body.accountNumber || process.env.VIETQR_ACCOUNT_NUMBER || ""),
+      accountNumber: String(
+        body.accountNumber || process.env.VIETQR_ACCOUNT_NUMBER || ""
+      ),
     };
   }
   return null;
@@ -211,7 +294,10 @@ function normalizeWebhookPayload(body) {
 async function findMatchingPendingTransactionByDesc(amount, description) {
   try {
     const pending = await prisma.giao_dich_ngan_hang.findMany({
-      where: { trang_thai: "cho_xac_nhan", thoi_gian_het_han: { gt: new Date() } },
+      where: {
+        trang_thai: "cho_xac_nhan",
+        thoi_gian_het_han: { gt: new Date() },
+      },
       orderBy: { thoi_gian_tao: "desc" },
     });
     for (const tx of pending) {
