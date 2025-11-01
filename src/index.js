@@ -4,15 +4,18 @@ const http = require('http');
 const socketIo = require('socket.io');
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-  cors: {
-    origin: "*",
-    methods: ["GET", "POST"]
-  }
-});
 const cors = require('cors');
 
-// Control logging verbosity: opt-in only via VERBOSE=true
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || '*';
+
+const io = socketIo(server, {
+  cors: {
+    origin: CLIENT_ORIGIN,
+    methods: ['GET', 'POST']
+  }
+});
+
+// Control logging verbosity
 const isVerbose = process.env.VERBOSE === 'true';
 if (!isVerbose) {
   console.log = () => {};
@@ -20,6 +23,7 @@ if (!isVerbose) {
   console.trace = () => {};
 }
 
+// routes ...
 const nhanvienRoutes = require('./routes/nhanvien.routes.js');
 const sanPhamRoutes = require('./routes/sanpham.routes.js');
 const phieuNhapRoutes = require('./routes/phieunhap.routes.js');
@@ -37,13 +41,11 @@ const paymentRoutes = require('./routes/payment.routes');
 const qrPaymentRoutes = require('./routes/qrPayment.routes');
 const voucherRoutes = require('./routes/voucher.routes');
 
-app.use(cors());
+app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
 app.use('/uploads', express.static(require('path').join(process.cwd(), 'uploads')));
 
-app.get('/', (req, res) => {
-  res.json({ message: 'API OK' });
-});
+app.get('/', (req, res) => { res.json({ message: 'API OK' }); });
 
 app.use('/api/nhanvien', nhanvienRoutes);
 app.use('/api/sanpham', sanPhamRoutes);
@@ -74,14 +76,11 @@ io.on('connection', (socket) => {
 
 global.io = io;
 
-// Webhook-only mode: skip all background detectors & simulator unless explicitly enabled
 const enableDetection = process.env.ENABLE_PAYMENT_DETECTION === 'true' && process.env.NODE_ENV === 'development';
 if (enableDetection) {
   try { require('./services/paymentStatusChecker.service'); } catch (_) {}
   try { require('./services/realPaymentVerification.service'); } catch (_) {}
   try { require('./services/realBankingDetection.service'); } catch (_) {}
-  // DO NOT auto-start mock simulator in webhook-only flow
-  // try { require('./services/mockPaymentSimulator.service'); } catch (_) {}
 }
 
 server.listen(process.env.PORT || 3001, () => {
