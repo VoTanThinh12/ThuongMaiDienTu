@@ -1,6 +1,8 @@
 const QRCode = require("qrcode");
 const cron = require("node-cron");
 const { PrismaClient } = require("@prisma/client");
+const sepayService = require("./sepay.service");
+
 const prisma = new PrismaClient();
 
 class QRPaymentService {
@@ -9,122 +11,107 @@ class QRPaymentService {
     this.startCleanupTask();
   }
 
+  // ✅ TÍCH HỢP SEPAY API
   async createBankQRPayment(orderId, amount, orderInfo) {
     try {
-      const bankCode = "MB";
-      const accountNumber = "0346176591";
-      const accountName = "VO TAN THINH";
-
       const numericAmount = Math.max(1000, Math.round(Number(amount) || 1000));
-
-      // ✅ FIX: Dùng CHÍNH XÁC orderId từ database (ma_don_hang)
-      // Không tự tạo hoặc biến đổi gì cả
       const cleanOrderId = String(orderId).trim();
 
-      // ✅ FIX: Tạo verificationCode ngắn gọn, dễ nhớ
+      // Tạo mã xác minh ngắn gọn
       const verificationCode = this.generateVerificationCode(
         cleanOrderId,
         numericAmount
       );
 
-      // ✅ FIX: Nội dung chuyển khoản CHUẨN - đây sẽ là nội dung hiện trên QR
-      const addInfo = `TT ${cleanOrderId} CODE ${verificationCode}`;
+      // ✅ Nội dung theo format Sepay chuẩn
+      const sepayContent = `TT ${cleanOrderId} CODE ${verificationCode}`;
 
-      const vietqrUrl = `https://img.vietqr.io/image/${bankCode}-${accountNumber}-compact2.jpg?amount=${numericAmount}&addInfo=${encodeURIComponent(
-        addInfo
-      )}&accountName=${encodeURIComponent(accountName)}`;
+      console.log("📝 Creating Sepay QR with content:", sepayContent);
 
-      console.log("🔗 VietQR URL Generated:", vietqrUrl);
-      console.log("📝 QR Content:", addInfo);
+      // ✅ GỌI SEPAY API thay vì tự tạo VietQR
+      const sepayResult = await sepayService.createQRPayment(
+        cleanOrderId,
+        numericAmount,
+        sepayContent
+      );
 
       const transactionId = `bank_${cleanOrderId}_${Date.now()}`;
       const transaction = {
         id: transactionId,
-        orderId: cleanOrderId, // ✅ FIX: Lưu CHÍNH XÁC orderId
+        orderId: cleanOrderId,
         type: "bank",
         amount: numericAmount,
-        qrContent: vietqrUrl,
+        qrContent: sepayResult.qrUrl, // ✅ QR từ Sepay
         status: "pending",
         createdAt: new Date(),
         expiresAt: new Date(Date.now() + 300000), // 5 phút
         verificationCode,
-        addInfo: addInfo, // ✅ FIX: Lưu nội dung chuyển khoản chính xác
+        sepayContent: sepayResult.qrContent, // ✅ Nội dung chính xác từ Sepay
+        sepayId: sepayResult.sepayId, // ✅ ID từ Sepay để track
       };
 
       this.activeTransactions.set(transactionId, transaction);
+
+      // ✅ Lưu DB với nội dung chính xác từ Sepay
       await this.saveBankTransactionToDatabase(transaction);
 
-      console.log("✅ Bank QR Payment Created:", {
+      console.log("✅ Sepay QR Payment Created:", {
         transactionId,
         amount: numericAmount,
         verificationCode,
-        addInfo,
+        sepayContent,
+        qrUrl: sepayResult.qrUrl,
       });
 
       return {
         transactionId,
-        qrContent: vietqrUrl,
-        qrCodeDataURL: vietqrUrl,
+        qrContent: sepayResult.qrUrl,
+        qrCodeDataURL: sepayResult.qrUrl,
         amount: numericAmount,
         expiresAt: transaction.expiresAt,
         verificationCode,
-        addInfo,
-        bankInfo: { bankCode, accountNumber, accountName },
+        sepayContent,
+        bankInfo: sepayResult.bankInfo,
       };
     } catch (error) {
-      console.error("❌ Error creating bank QR payment:", error);
-      throw new Error("Không thể tạo QR thanh toán: " + error.message);
+      console.error("❌ Error creating Sepay QR payment:", error);
+      throw new Error("Không thể tạo QR thanh toán Sepay: " + error.message);
     }
   }
 
-  // ✅ FIX: Lưu database với ĐÚNG ma_don_hang và ma_xac_minh
+  // ✅ Lưu DB với nội dung chính xác từ Sepay
   async saveBankTransactionToDatabase(tx) {
     try {
-      console.log("💾 Saving transaction for orderId:", tx.orderId);
+      console.log("💾 Saving Sepay transaction:", tx.orderId);
 
-      // Tìm đơn hàng theo ma_don_hang CHÍNH XÁC
-      const existingOrder = await prisma.don_hang.findFirst({
-        where: { ma_don_hang: tx.orderId },
-      });
-
-      if (!existingOrder) {
-        console.warn("⚠️ Order not found:", tx.orderId);
-        return;
-      }
-
-      console.log(
-        "🔍 Order search result:",
-        `Found: ${existingOrder.ma_don_hang}`
-      );
-
-      // ✅ FIX: Lưu với CHÍNH XÁC ma_don_hang và ma_xac_minh từ transaction
       await prisma.giao_dich_ngan_hang.create({
         data: {
           ma_giao_dich: tx.id,
-          ma_don_hang: tx.orderId, // ✅ Chính xác orderId
+          ma_don_hang: tx.orderId,
           so_tien: tx.amount,
-          ma_xac_minh: tx.verificationCode, // ✅ Chính xác verificationCode
+          ma_xac_minh: tx.verificationCode,
           trang_thai: "cho_xac_nhan",
           thoi_gian_tao: tx.createdAt,
           thoi_gian_het_han: tx.expiresAt,
-          noi_dung: tx.addInfo, // ✅ Chính xác nội dung QR
+          noi_dung: tx.sepayContent, // ✅ Nội dung chính xác từ Sepay
+          ref_gateway: tx.sepayId, // ✅ Sepay ID
         },
       });
 
-      console.log("✅ Transaction saved for order:", tx.orderId);
+      console.log("✅ Sepay transaction saved:", tx.orderId);
     } catch (error) {
-      console.error("❌ Save transaction error:", error);
+      console.error("❌ Save Sepay transaction error:", error);
     }
   }
 
-  // ✅ FIX: Tạo mã xác minh ngắn gọn hơn (10-11 ký tự)
   generateVerificationCode(orderId, amount) {
-    const timestamp = Date.now().toString().slice(-5); // 5 số cuối timestamp
-    const amountSuffix = String(amount).slice(-3); // 3 số cuối amount
-    const orderSuffix = orderId.replace(/\D/g, "").slice(-3); // 3 số cuối orderId
+    const timestamp = Date.now().toString().slice(-5);
+    const amountSuffix = String(amount).slice(-3);
+    const orderSuffix = orderId.replace(/\D/g, "").slice(-3);
     return `${orderSuffix}${amountSuffix}${timestamp}`;
   }
 
+  // Các method khác giữ nguyên...
   async verifyBankTransaction(transactionId, verifiedBy) {
     const dbTx = await prisma.giao_dich_ngan_hang.findFirst({
       where: { ma_giao_dich: transactionId, trang_thai: "cho_xac_nhan" },
@@ -156,7 +143,6 @@ class QRPaymentService {
 
     this.activeTransactions.delete(transactionId);
 
-    // ✅ FIX: Phát sự kiện socket payment-success
     if (global.io) {
       console.log("🎉 Emitting payment-success event for:", transactionId);
       global.io.to(`transaction-${transactionId}`).emit("payment-success", {
@@ -169,7 +155,6 @@ class QRPaymentService {
     return true;
   }
 
-  // Các method khác giữ nguyên...
   startCleanupTask() {
     cron.schedule("*/5 * * * * *", () => {
       const now = new Date();

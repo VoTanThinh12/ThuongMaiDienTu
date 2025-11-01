@@ -132,14 +132,18 @@ exports.handleBankWebhook = async (req, res) => {
       paymentData;
 
     const expectedAccount = process.env.VIETQR_ACCOUNT_NUMBER || "";
-    if (expectedAccount && accountNumber && accountNumber !== expectedAccount)
+    if (expectedAccount && accountNumber && accountNumber !== expectedAccount) {
+      console.log(`ℹ️ Skip other account: ${bankCode}-${accountNumber}`);
       return res.json({ success: true, ignored: true });
+    }
 
+    // ✅ FIX: Sử dụng hàm matching linh hoạt
     const matchedTx = await findMatchingPendingTransactionByDesc(
       amount,
       description
     );
     if (!matchedTx) {
+      console.warn("⚠️ No matching pending transaction found");
       await logUnmatchedWebhook({
         amount,
         description,
@@ -151,6 +155,7 @@ exports.handleBankWebhook = async (req, res) => {
       return res.json({ success: true, matched: false });
     }
 
+    // Lưu reference Sepay để trace
     await prisma.giao_dich_ngan_hang.update({
       where: { id: matchedTx.id },
       data: {
@@ -159,10 +164,13 @@ exports.handleBankWebhook = async (req, res) => {
       },
     });
 
+    // Xác nhận thanh toán
     await qrPaymentService.verifyBankTransaction(
       matchedTx.ma_giao_dich,
       "BANK_WEBHOOK_AUTO"
     );
+
+    console.log(`🎉 Payment confirmed successfully: ${matchedTx.ma_giao_dich}`);
     return res.json({
       success: true,
       matched: true,
@@ -291,8 +299,11 @@ function normalizeWebhookPayload(body) {
   return null;
 }
 
+// ✅ FIX: HÀM MATCHING LINH HOẠT CHO SEPAY
 async function findMatchingPendingTransactionByDesc(amount, description) {
   try {
+    console.log("🔍 Searching for transaction:", { amount, description });
+
     const pending = await prisma.giao_dich_ngan_hang.findMany({
       where: {
         trang_thai: "cho_xac_nhan",
@@ -300,15 +311,75 @@ async function findMatchingPendingTransactionByDesc(amount, description) {
       },
       orderBy: { thoi_gian_tao: "desc" },
     });
+
+    console.log(`📋 Found ${pending.length} pending transactions`);
+
     for (const tx of pending) {
+      // Kiểm tra số tiền (cho phép lệch ±1000 VND)
       const amountMatch = Math.abs(Number(tx.so_tien) - Number(amount)) < 1000;
-      const codeMatch = description.includes(tx.ma_xac_minh);
-      const orderMatch = description.includes(tx.ma_don_hang);
-      if (amountMatch && (codeMatch || orderMatch)) return tx;
+
+      if (!amountMatch) continue;
+
+      // ✅ FIX: MATCHING LINH HOẠT - 5 cách match
+      let matchType = null;
+
+      // Cách 1: Match chính xác mã xác minh
+      if (tx.ma_xac_minh && description.includes(tx.ma_xac_minh)) {
+        matchType = "verification_code";
+      }
+
+      // Cách 2: Match chính xác mã đơn hàng
+      else if (tx.ma_don_hang && description.includes(tx.ma_don_hang)) {
+        matchType = "order_code";
+      }
+
+      // Cách 3: Match số đơn hàng (bỏ prefix DH)
+      else if (tx.ma_don_hang && tx.ma_don_hang.startsWith("DH")) {
+        const orderNumber = tx.ma_don_hang.replace(/^DH/, "");
+        if (orderNumber && description.includes(orderNumber)) {
+          matchType = "order_number";
+        }
+      }
+
+      // Cách 4: Match 8 ký tự cuối mã đơn hàng (backup)
+      else if (tx.ma_don_hang && tx.ma_don_hang.length > 8) {
+        const orderSuffix = tx.ma_don_hang.slice(-8);
+        if (description.includes(orderSuffix)) {
+          matchType = "order_suffix";
+        }
+      }
+
+      // Cách 5: Match theo pattern "DH + số"
+      else if (tx.ma_don_hang) {
+        const dhPattern = tx.ma_don_hang.match(/DH(\d+)/);
+        if (dhPattern && description.includes(`DH${dhPattern[1]}`)) {
+          matchType = "dh_pattern";
+        }
+      }
+
+      if (matchType) {
+        console.log(
+          `✅ Transaction MATCHED: ${tx.ma_giao_dich} via ${matchType}`
+        );
+        console.log(
+          `   DB: ma_don_hang=${tx.ma_don_hang}, ma_xac_minh=${tx.ma_xac_minh}`
+        );
+        console.log(`   Sepay: description="${description}"`);
+        return tx;
+      }
     }
+
+    console.log("❌ No transaction matched");
+    console.log("Pending transactions:");
+    pending.forEach((tx) => {
+      console.log(
+        `   - ${tx.ma_giao_dich}: ${tx.ma_don_hang} | ${tx.ma_xac_minh} | ${tx.so_tien}đ`
+      );
+    });
+
     return null;
   } catch (e) {
-    console.error("Error matching tx:", e);
+    console.error("Error matching transaction:", e);
     return null;
   }
 }
