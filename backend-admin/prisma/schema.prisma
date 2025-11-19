@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model user {
+  id         Int      @id @default(autoincrement())
+  name       String   @db.VarChar(100)
+  email      String   @unique(map: "email") @db.VarChar(100)
+  password   String   @db.VarChar(255)
+  created_at DateTime @default(now()) @db.Timestamp(0)
+}
+
+model chi_tiet_hoa_don_ban {
+  id           Int                     @id @default(autoincrement())
+  id_hoa_don   Int?
+  id_san_pham  Int?
+  so_luong     Int?
+  don_gia      Decimal?                @db.Decimal(10, 2)
+  hoa_don_ban  hoa_don_ban?            @relation(fields: [id_hoa_don], references: [id], onDelete: Cascade, map: "chi_tiet_hoa_don_ban_ibfk_1")
+  san_pham     san_pham?               @relation(fields: [id_san_pham], references: [id], onDelete: Cascade, map: "chi_tiet_hoa_don_ban_ibfk_2")
+  hoan_tra     chi_tiet_hoan_tra[]
+
+  @@index([id_hoa_don], map: "id_hoa_don")
+  @@index([id_san_pham], map: "id_san_pham")
+}
+
+model chi_tiet_phieu_nhap {
+  id            Int         @id @default(autoincrement())
+  id_phieu_nhap Int?
+  id_san_pham   Int?
+  so_luong_nhap Int?
+  gia_nhap      Decimal?    @db.Decimal(10, 2)
+  phieu_nhap    phieu_nhap? @relation(fields: [id_phieu_nhap], references: [id], onDelete: Cascade, map: "chi_tiet_phieu_nhap_ibfk_1")
+  san_pham      san_pham?   @relation(fields: [id_san_pham], references: [id], onDelete: Cascade, map: "chi_tiet_phieu_nhap_ibfk_2")
+
+  @@index([id_phieu_nhap], map: "id_phieu_nhap")
+  @@index([id_san_pham], map: "id_san_pham")
+}
+
+model hoa_don_ban {
+  id                   Int                    @id @default(autoincrement())
+  id_nhan_vien         Int?                   @map("id_nhan_vien")
+  ngay_ban             DateTime?              @default(now())
+  tong_tien            Decimal?               @db.Decimal(10, 2)
+  tien_khach_dua       Decimal?               @map("tien_khach_dua") @db.Decimal(10, 2)
+  tien_thoi            Decimal?               @map("tien_thoi") @db.Decimal(10, 2)
+
+  nhan_vien            nhan_vien?             @relation(fields: [id_nhan_vien], references: [id], onDelete: SetNull)
+  chi_tiet_hoa_don_ban chi_tiet_hoa_don_ban[]
+  phieu_hoan_tra       phieu_hoan_tra[]
+
+  @@map("hoa_don_ban")
+}
+
+model phieu_hoan_tra {
+  id               Int                 @id @default(autoincrement())
+  id_hoa_don       Int
+  id_nhan_vien     Int?
+  ngay_hoan_tra    DateTime            @default(now())
+  tong_tien_hoan   Decimal             @db.Decimal(10, 2)
+  ly_do            String?             @db.Text
+  trang_thai       TrangThaiHoanTra    @default(CHO_DUYET)
+  
+  hoa_don_ban      hoa_don_ban         @relation(fields: [id_hoa_don], references: [id], onDelete: Cascade)
+  nhan_vien        nhan_vien?          @relation(fields: [id_nhan_vien], references: [id], onDelete: SetNull)
+  chi_tiet_hoan_tra chi_tiet_hoan_tra[]
+
+  @@index([id_hoa_don], map: "id_hoa_don")
+  @@index([id_nhan_vien], map: "id_nhan_vien")
+}
+
+model chi_tiet_hoan_tra {
+  id                     Int                   @id @default(autoincrement())
+  id_phieu_hoan_tra      Int
+  id_chi_tiet_hoa_don    Int
+  so_luong_hoan          Int
+  don_gia_hoan           Decimal               @db.Decimal(10, 2)
+  ly_do_hoan             String?               @db.Text
+
+  phieu_hoan_tra         phieu_hoan_tra        @relation(fields: [id_phieu_hoan_tra], references: [id], onDelete: Cascade)
+  chi_tiet_hoa_don_ban   chi_tiet_hoa_don_ban  @relation(fields: [id_chi_tiet_hoa_don], references: [id], onDelete: Cascade)
+
+  @@index([id_phieu_hoan_tra], map: "id_phieu_hoan_tra")
+  @@index([id_chi_tiet_hoa_don], map: "id_chi_tiet_hoa_don")
+}
+
+model nha_cung_cap {
+  id               Int          @id @default(autoincrement())
+  ten_nha_cung_cap String?      @db.VarChar(100)
+  so_dien_thoai    String?      @db.VarChar(15)
+  dia_chi          String?      @db.Text
+  phieu_nhap       phieu_nhap[]
+}
+
+model nhan_vien {
+  id             Int                  @id @default(autoincrement())
+  ho_ten         String               @db.VarChar(100)
+  tai_khoan      String               @unique @db.VarChar(50)
+  mat_khau       String               @db.VarChar(100)
+  vai_tro        nhan_vien_vai_tro    @default(quan_ly)
+  trang_thai     nhan_vien_trang_thai @default(Dang_lam)
+  so_dien_thoai  String?              @db.VarChar(15)
+  dia_chi        String?              @db.Text
+  email          String?              @unique
+  ngay_sinh      DateTime?            @db.Date
+  ngay_vao_lam   DateTime?            @db.Date
+  hoa_don_ban    hoa_don_ban[]
+  phieu_nhap     phieu_nhap[]
+  phieu_hoan_tra phieu_hoan_tra[]
+
+  @@index([tai_khoan], map: "tai_khoan")
+  @@map("nhan_vien")
+}
+
+model phieu_nhap {
+  id                  Int                   @id @default(autoincrement())
+  id_nha_cung_cap     Int?
+  ngay_nhap           DateTime?             @default(now()) @db.DateTime(0)
+  id_nhan_vien        Int?
+  chi_tiet_phieu_nhap chi_tiet_phieu_nhap[]
+  nha_cung_cap        nha_cung_cap?         @relation(fields: [id_nha_cung_cap], references: [id], onDelete: Restrict, onUpdate: Restrict, map: "phieu_nhap_ibfk_1")
+  nhan_vien           nhan_vien?            @relation(fields: [id_nhan_vien], references: [id], map: "phieu_nhap_ibfk_2")
+
+  @@index([id_nha_cung_cap], map: "id_nha_cung_cap")
+  @@index([id_nhan_vien], map: "id_nhan_vien")
+}
+
+model san_pham {
+  id                   Int                    @id @default(autoincrement())
+  ten_san_pham         String?                @db.VarChar(100)
+  ma_san_pham          String?                @unique(map: "ma_san_pham") @db.VarChar(50)
+  don_vi_tinh          String?                @db.VarChar(50)
+  gia_ban              Decimal?               @db.Decimal(10, 2)
+  so_luong             Int?                   @default(0)
+  trang_thai           TrangThaiSanPham?      @default(DANG_KINH_DOANH)
+  ngay_tao             DateTime?              @default(now()) @db.DateTime(0)
+  chi_tiet_hoa_don_ban chi_tiet_hoa_don_ban[]
+  chi_tiet_phieu_nhap  chi_tiet_phieu_nhap[]
+}
+
+enum nhan_vien_vai_tro {
+  quan_ly
+  thu_ngan
+  nhan_vien_kho
+}
+
+enum nhan_vien_trang_thai {
+  Dang_lam @map("Đang làm")
+  Da_nghi  @map("Đã nghỉ")
+}
+
+enum TrangThaiHoanTra {
+  CHO_DUYET    @map("Chờ duyệt")
+  DA_DUYET     @map("Đã duyệt") 
+  TU_CHOI      @map("Từ chối")
+  HOAN_THANH   @map("Hoàn thành")
+}
+
+enum TrangThaiSanPham {
+  DANG_KINH_DOANH
+  NGUNG_KINH_DOANH
+  AN
+}
