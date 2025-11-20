@@ -1,11 +1,14 @@
 import React, { memo, useState, useEffect, useCallback } from 'react';
 import { 
-  Table, Button, Modal, Form, Input, InputNumber, message, Popconfirm,
-  Space, Card 
+  Table, Button, Modal, Form, Input, InputNumber, message,
+  Space, Card, Dropdown, Tag, Switch
 } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, ShoppingOutlined, SearchOutlined } from '@ant-design/icons';
-import { adminAPI } from '../utils/api';
-import MainLayout from '../components/MainLayout';
+import { 
+  PlusOutlined, EditOutlined, ShoppingOutlined, SearchOutlined,
+  MoreOutlined, EyeInvisibleOutlined, StopOutlined, UndoOutlined, EyeOutlined
+} from '@ant-design/icons';
+import api from '../utils/api';
+// import MainLayout from '../components/MainLayout';
 
 const ProductManagement = memo(() => {
   const [products, setProducts] = useState([]);
@@ -14,6 +17,7 @@ const ProductManagement = memo(() => {
   const [editingProduct, setEditingProduct] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchText, setSearchText] = useState('');
+  const [showHiddenProducts, setShowHiddenProducts] = useState(false);
   const [form] = Form.useForm();
 
   const fetchProducts = useCallback(async () => {
@@ -22,19 +26,28 @@ const ProductManagement = memo(() => {
       message.error('Bạn cần đăng nhập để xem danh sách sản phẩm!');
       return;
     }
-
+//heheh
     setLoading(true);
     try {
-      const response = await adminAPI.getProducts();
-      setProducts(Array.isArray(response.data) ? response.data : []);
-      setFilteredProducts(Array.isArray(response.data) ? response.data : []);
+      const params = showHiddenProducts ? { include_hidden: 'true' } : {};
+      console.log('Fetching products with params:', params, 'showHiddenProducts:', showHiddenProducts);
+      const response = await api.get('/sanpham', { params });
+      console.log('Products fetched:', response.data.length, 'products');
+      const sorted = (response.data || []).slice().sort((a, b) => {
+        // Ưu tiên sắp xếp mới nhất lên đầu theo id giảm dần; fallback theo ngay_tao nếu có
+        if (a?.id != null && b?.id != null) return b.id - a.id;
+        if (a?.ngay_tao && b?.ngay_tao) return new Date(b.ngay_tao) - new Date(a.ngay_tao);
+        return 0;
+      });
+      setProducts(sorted);
+      setFilteredProducts(sorted);
     } catch (error) {
       console.error('Fetch products error:', error);
       message.error(error.response?.data?.error || 'Lỗi khi tải danh sách sản phẩm.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showHiddenProducts]);
 
   useEffect(() => {
     fetchProducts();
@@ -76,14 +89,26 @@ const ProductManagement = memo(() => {
     });
   }, [form]);
 
-  const handleDelete = useCallback(async (id) => {
+  const handleSoftDelete = useCallback(async (id, trang_thai) => {
     try {
-      await adminAPI.deleteProduct(id);
-      message.success('Xóa sản phẩm thành công!');
+      await api.delete(`/sanpham/${id}`, { data: { trang_thai } });
+      const statusMessage = trang_thai === 'AN' ? 'ẩn' : 'ngừng kinh doanh';
+      message.success(`Sản phẩm đã ${statusMessage} thành công!`);
       fetchProducts();
     } catch (error) {
-      console.error('Delete product error:', error);
-      message.error(error.response?.data?.error || 'Lỗi khi xóa sản phẩm.');
+      console.error('Soft delete product error:', error);
+      message.error(error.response?.data?.error || 'Lỗi khi cập nhật trạng thái sản phẩm.');
+    }
+  }, [fetchProducts]);
+
+  const handleRestore = useCallback(async (id) => {
+    try {
+      await api.patch(`/sanpham/${id}/restore`);
+      message.success('Khôi phục sản phẩm thành công!');
+      fetchProducts();
+    } catch (error) {
+      console.error('Restore product error:', error);
+      message.error(error.response?.data?.error || 'Lỗi khi khôi phục sản phẩm.');
     }
   }, [fetchProducts]);
 
@@ -92,10 +117,10 @@ const ProductManagement = memo(() => {
       const values = await form.validateFields();
       
       if (editingProduct) {
-        await adminAPI.updateProduct(editingProduct.id, values);
+        await api.put(`/sanpham/${editingProduct.id}`, values);
         message.success('Cập nhật sản phẩm thành công!');
       } else {
-        await adminAPI.createProduct(values);
+        await api.post('/sanpham', values);
         message.success('Thêm sản phẩm thành công!');
       }
       
@@ -119,6 +144,30 @@ const ProductManagement = memo(() => {
       style: 'currency',
       currency: 'VND',
     }).format(amount);
+  }, []);
+
+  const getStatusTag = useCallback((trang_thai) => {
+    const statusConfig = {
+      'DANG_KINH_DOANH': { color: 'green', text: 'Đang kinh doanh', icon: '🟢' },
+      'NGUNG_KINH_DOANH': { color: 'orange', text: 'Ngừng kinh doanh', icon: '🟡' },
+      'AN': { color: 'red', text: 'Ẩn', icon: '🔴' }
+    };
+    
+    const config = statusConfig[trang_thai] || statusConfig['DANG_KINH_DOANH'];
+    
+    return (
+      <Tag 
+        color={config.color} 
+        style={{ 
+          fontWeight: 'bold',
+          borderRadius: '6px',
+          padding: '4px 8px',
+          fontSize: '12px'
+        }}
+      >
+        {config.icon} {config.text}
+      </Tag>
+    );
   }, []);
 
   // Hàm highlight text tìm kiếm với style đẹp
@@ -204,39 +253,81 @@ const ProductManagement = memo(() => {
       ),
     },
     {
+      title: 'Trạng thái',
+      dataIndex: 'trang_thai',
+      key: 'trang_thai',
+      width: 140,
+      align: 'center',
+      render: (trang_thai) => getStatusTag(trang_thai || 'DANG_KINH_DOANH'),
+    },
+    {
       title: '',
       key: 'action',
-      width: 150,
+      width: 180,
       align: 'center',
-      render: (_, record) => (
-        <Space size="small">
-          <Button 
-            type="primary" 
-            ghost 
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => handleEdit(record)}
-          >
-            Sửa
-          </Button>
-          <Popconfirm
-            title="Xóa sản phẩm"
-            description="Bạn có chắc chắn muốn xóa sản phẩm này?"
-            onConfirm={() => handleDelete(record.id)}
-            okText="Có"
-            cancelText="Không"
-          >
-            <Button danger size="small" icon={<DeleteOutlined />}>
-              Xóa
+      render: (_, record) => {
+        // Xử lý trường hợp sản phẩm chưa có trạng thái (mặc định là đang kinh doanh)
+        const trang_thai = record.trang_thai || 'DANG_KINH_DOANH';
+        const isActive = trang_thai === 'DANG_KINH_DOANH';
+        
+        const actionItems = [];
+
+        if (isActive) {
+          // Sản phẩm đang kinh doanh - hiển thị các tùy chọn ngừng kinh doanh và ẩn
+          actionItems.push(
+            {
+              key: 'stop',
+              label: 'Ngừng kinh doanh',
+              icon: <StopOutlined/>,
+              onClick: () => handleSoftDelete(record.id, 'NGUNG_KINH_DOANH'),
+            },
+            {
+              key: 'hide',
+              label: 'Ẩn sản phẩm',
+              icon: <EyeInvisibleOutlined />,
+              onClick: () => handleSoftDelete(record.id, 'AN'),
+            }
+          );
+        } else {
+          // Sản phẩm đã ngừng kinh doanh hoặc ẩn - hiển thị tùy chọn khôi phục
+          actionItems.push({
+            key: 'restore',
+            label: 'Khôi phục',
+            icon: <UndoOutlined />,
+            onClick: () => handleRestore(record.id),
+          });
+        }
+
+        return (
+          <Space size="small">
+            <Button 
+              type="primary" 
+              ghost 
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => handleEdit(record)}
+            >
+              Sửa
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
+            {actionItems.length > 0 && (
+              <Dropdown
+                menu={{ items: actionItems }}
+                trigger={['click']}
+                placement="bottomRight"
+              >
+                <Button size="small" icon={<MoreOutlined />}>
+                  {isActive ? 'Tùy chọn' : 'Khôi phục'}
+                </Button>
+              </Dropdown>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 
   return (
-    <MainLayout>
+    <div>
       <div style={{
         maxWidth: '1400px',
         margin: '0 auto',
@@ -307,6 +398,39 @@ const ProductManagement = memo(() => {
                   🛍️ <strong>{filteredProducts.length}</strong> kết quả tìm thấy cho "{searchText}"
                 </div>
               )}
+            </div>
+            
+            {/* Switch hiển thị sản phẩm ẩn */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '8px 16px',
+              background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+              borderRadius: '8px',
+              border: '1px solid #bae6fd',
+              boxShadow: '0 2px 8px rgba(14, 165, 233, 0.1)'
+            }}>
+              <EyeOutlined style={{ color: '#0ea5e9', fontSize: '16px' }} />
+              <span style={{ 
+                fontSize: '13px', 
+                fontWeight: 'bold', 
+                color: '#0c4a6e',
+                whiteSpace: 'nowrap'
+              }}>
+                Hiển thị sản phẩm bị ẩn và ngừng kinh doanh 
+              </span>
+              <Switch
+                checked={showHiddenProducts}
+                onChange={(checked) => {
+                  setShowHiddenProducts(checked);
+                  // fetchProducts sẽ được gọi tự động thông qua useEffect dependency
+                }}
+                size="small"
+                style={{
+                  background: showHiddenProducts ? '#0ea5e9' : '#cbd5e1'
+                }}
+              />
             </div>
             <Button
               type="primary"
@@ -404,6 +528,19 @@ const ProductManagement = memo(() => {
                         {filteredProducts.length} kết quả
                       </span>
                       <span>trong {products.length} sản phẩm</span>
+                      {showHiddenProducts && (
+                        <span style={{
+                          background: '#f59e0b',
+                          color: 'white',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          marginLeft: '8px'
+                        }}>
+                          Bao gồm sản phẩm ẩn
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -455,7 +592,7 @@ const ProductManagement = memo(() => {
                 `Không tìm thấy sản phẩm với từ khóa "${searchText}"` : 
                 'Không có dữ liệu'
             }}
-            scroll={{ x: 800 }}
+            scroll={{ x: 1000 }}
           />
         </Card>
 
@@ -547,7 +684,7 @@ const ProductManagement = memo(() => {
           </Form>
         </Modal>
       </div>
-    </MainLayout>
+    </div>
   );
 });
 
